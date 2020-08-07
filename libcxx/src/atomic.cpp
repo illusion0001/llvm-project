@@ -18,7 +18,9 @@
 #ifdef __linux__
 
 #include <unistd.h>
+#ifndef PS4
 #include <linux/futex.h>
+#endif
 #include <sys/syscall.h>
 
 #else // <- Add other operating systems here
@@ -29,7 +31,7 @@
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PS4)
 
 static void __libcpp_platform_wait_on_address(__cxx_atomic_contention_t const volatile* __ptr,
                                               __cxx_contention_t __val)

@@ -243,19 +243,6 @@
 #  endif // __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #endif // __BYTE_ORDER__
 
-#ifdef __FreeBSD__
-#  include <sys/endian.h>
-#  include <osreldate.h>
-#  if _BYTE_ORDER == _LITTLE_ENDIAN
-#    define _LIBCPP_LITTLE_ENDIAN
-#  else  // _BYTE_ORDER == _LITTLE_ENDIAN
-#    define _LIBCPP_BIG_ENDIAN
-#  endif  // _BYTE_ORDER == _LITTLE_ENDIAN
-#  ifndef __LONG_LONG_SUPPORTED
-#    define _LIBCPP_HAS_NO_LONG_LONG
-#  endif  // __LONG_LONG_SUPPORTED
-#endif  // __FreeBSD__
-
 #ifdef __NetBSD__
 #  include <sys/endian.h>
 #  if _BYTE_ORDER == _LITTLE_ENDIAN
