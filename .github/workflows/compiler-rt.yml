@@ -36,4 +36,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: compiler-rt.tar.gz
-        path: compiler-rt.tar.gz
+        path: release/compiler-rt.tar.gz
