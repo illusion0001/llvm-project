@@ -10,6 +10,8 @@
 // its methods are called in the same order, with the same arguments.
 //===----------------------------------------------------------------------===//
 
+// CI test
+
 #ifndef LLVM_FUZZER_FUZZED_DATA_PROVIDER_H_
 #define LLVM_FUZZER_FUZZED_DATA_PROVIDER_H_
 
