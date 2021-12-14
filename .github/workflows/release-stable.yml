@@ -66,7 +66,7 @@ jobs:
         echo "ADDLIB libc++.a"    >> mri.txt
         echo "SAVE"               >> mri.txt
         echo "END"                >> mri.txt
-        $AR -M < mri.txt && rm mri.txt && rm libc++.a && mv libc++M.a libc++.a
+        llvm-ar -M < mri.txt && rm mri.txt && rm libc++.a && mv libc++M.a libc++.a
 
     - name: Create tarball
       run: |
