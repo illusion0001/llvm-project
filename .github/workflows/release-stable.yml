@@ -54,11 +54,11 @@ jobs:
       run: |
         mkdir -p release/lib
         mkdir release/include
-        cp compiler-rt/build/lib/linux/* release/lib/
-        cp libcxx/build/lib/* release/lib/
-        cp libcxxabi/build/lib/* release/lib/
-        cp libunwind/build/lib/* release/lib/
-        cp libcxx/build/include/* release/include/
+        cp -r compiler-rt/build/lib/linux/* release/lib/
+        cp -r libcxx/build/lib/* release/lib/
+        cp -r libcxxabi/build/lib/* release/lib/
+        cp -r libunwind/build/lib/* release/lib/
+        cp -r libcxx/build/include/* release/include/
 
     - name: Create master libc++ archive
       run: |
