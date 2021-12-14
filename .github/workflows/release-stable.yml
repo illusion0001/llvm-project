@@ -46,8 +46,9 @@ jobs:
 
     - name: Build libcxx
       run: |
+        mkdir out
         mkdir libcxx/build && cd libcxx/build
-        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_libcxx_IS_BAREMETAL=1 -I../../../oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_libcxx_IS_BAREMETAL=1 -I../../../oops4/include" -DLLVM_PATH="../../llvm" -DLIBCXX_ENABLE_RTTI=YES -DLIBCXX_HAS_MUSL_LIBC=YES -DLIBCXX_ENABLE_SHARED=NO -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" .. && make
+        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -DCMAKE_C_FLAGS="-fPIC -DCMAKE_INSTALL_PREFIX="../../out" -DPS4 -D_libcxx_IS_BAREMETAL=1 -I../../../oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_libcxx_IS_BAREMETAL=1 -I../../../oops4/include" -DLLVM_PATH="../../llvm" -DLIBCXX_ENABLE_RTTI=YES -DLIBCXX_HAS_MUSL_LIBC=YES -DLIBCXX_ENABLE_SHARED=NO -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" .. && make && make install
 
     - name: Copy libs and headers
       continue-on-error: true
@@ -58,7 +59,7 @@ jobs:
         cp -r libcxx/build/lib/* release/lib/
         cp -r libcxxabi/build/lib/* release/lib/
         cp -r libunwind/build/lib/* release/lib/
-        cp -r libcxx/build/include/* release/include/
+        cp -r out/include/* release/include/
 
     - name: Create master libc++ archive
       run: |
