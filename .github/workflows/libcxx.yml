@@ -1,0 +1,44 @@
+name: libcxx
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'libcxx/**'
+  pull_request:
+    branches: [ master ]
+  
+  workflow_dispatch:
+
+jobs:
+  build:
+    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
+    # You can convert this to a matrix build if you need cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Fetch toolchain headers
+      uses: actions/checkout@v2
+      with:
+        repository: OpenOrbis/OpenOrbis-PS4-Toolchain
+        path: oops4
+        ref: master
+
+    - name: Build
+      run: |
+        mkdir libcxx/build && cd libcxx/build
+        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_libcxx_IS_BAREMETAL=1 -I../../../oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_libcxx_IS_BAREMETAL=1 -I../../../oops4/include" -DLLVM_PATH="../../llvm" -DLIBCXX_ENABLE_RTTI=YES -DLIBCXX_HAS_MUSL_LIBC=YES -DLIBCXX_ENABLE_SHARED=NO -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" .. && make
+    - name: Create tarball
+      run: |
+        mkdir -p release/lib
+        cp -r libcxx/build/lib/* release/lib/
+        cd release
+        tar -cvzf libcxx.tar.gz lib/*
+    - name: Upload libcxx
+      uses: actions/upload-artifact@v2
+      with:
+        name: libcxx.tar.gz
+        path: release/libcxx.tar.gz
