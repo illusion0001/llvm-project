@@ -75,7 +75,8 @@ jobs:
 
     - name: Create tarball
       run: |
-        tar -cvzf libcxx-full.tar.gz release/*
+        cd release
+        tar -cvzf libcxx-full.tar.gz lib/* include/*
 
     - name: Create Release
       id: create_release
@@ -97,6 +98,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: libcxx-full.tar.gz
+        asset_path: release/libcxx-full.tar.gz
         asset_name: libcxx-full.tar.gz
         asset_content_type: application/gzip
