@@ -30,7 +30,7 @@ jobs:
     - name: Build
       run: |
         mkdir libcxx/build && cd libcxx/build
-        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" -DLLVM_PATH="../../llvm" -DLIBCXX_ENABLE_RTTI=YES -DLIBCXX_HAS_MUSL_LIBC=YES -DLIBCXX_ENABLE_SHARED=NO -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" .. && make
+        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" -DLLVM_PATH="../../llvm" -DLIBCXX_ENABLE_RTTI=YES -DLIBCXX_HAS_MUSL_LIBC=YES -DLIBCXX_HAS_THREAD_API_PTHREAD=YES -DLIBCXX_ENABLE_SHARED=NO -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" .. && make
     - name: Create tarball
       run: |
         mkdir -p release/lib
