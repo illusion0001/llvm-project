@@ -19,6 +19,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    
+    - name: Fetch toolchain headers
+      uses: actions/checkout@v2
+      with:
+        repository: OpenOrbis/OpenOrbis-PS4-Toolchain
+        path: oops4
+        ref: master
 
     - name: Fetch musl stable
       uses: i3h/download-release-asset@v1
@@ -30,7 +37,6 @@ jobs:
     
     - name: Extract musl
       run: |
-        mkdir oops4
         mv musl.tar.gz oops4/musl.tar.gz
         cd oops4 && tar -xvzf musl.tar.gz
 
