@@ -63,7 +63,7 @@ jobs:
       run: |
         mkdir out
         mkdir libcxx/build && cd libcxx/build
-        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" -DLLVM_PATH="../../llvm" -DLIBCXX_ENABLE_RTTI=YES -DLIBCXX_HAS_MUSL_LIBC=YES -DLIBCXX_ENABLE_THREADS=YES -DLIBCXX_HAS_THREAD_API_PTHREAD=YES -DLIBCXX_ENABLE_SHARED=NO -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" -DCMAKE_INSTALL_PREFIX="../../out" .. && make && make install
+        cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLIBCXX_HAS_MUSL_LIBC=1 -DLIBCXX_HAS_GCC_S_LIB=0 -DLIBCXX_ENABLE_THREADS=1 -DLIBCXX_HAS_THREAD_API_PTHREAD=1 -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON -DLIBCXX_ENABLE_SHARED=OFF -DLLVM_PATH="../../llvm" -DCMAKE_C_FLAGS="-DPS4 -fPIC" -DCMAKE_CXX_FLAGS="-DPS4 -fPIC" -DCMAKE_INSTALL_PREFIX="../../out" .. && cmake -DCMAKE_SYSROOT="../../../oops4" .. && make && make install
     
     - name: Copy libs and headers
       continue-on-error: true
@@ -75,6 +75,7 @@ jobs:
         cp -r libcxxabi/build/lib/* release/lib/
         cp -r libunwind/build/lib/* release/lib/
         cp -r out/include/* release/include/
+        rm -rf release/lib/abi
     
     - name: Create master libc++ archive
       run: |
