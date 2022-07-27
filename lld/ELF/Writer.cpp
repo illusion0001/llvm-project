@@ -2763,6 +2763,16 @@ static uint64_t getEntryAddr() {
 }
 
 static uint16_t getELFType() {
+  // ----- Start OpenOrbis Change -----
+  if (config->osabi == ELFOSABI_PS4) {
+    if (config->isPic) {
+      if (getEntryAddr() != 0)
+        return ET_SCE_EXEC_ASLR;
+      return ET_SCE_DYNAMIC;
+    }
+    return ET_SCE_EXEC;
+  }
+  // ----- End OpenOrbis Change -----
   if (config->isPic)
     return ET_DYN;
   if (config->relocatable)

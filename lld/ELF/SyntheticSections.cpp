@@ -3726,7 +3726,7 @@ template <typename ELFT> void elf::writeEhdr(uint8_t *buf, Partition &part) {
   eHdr->e_ident[EI_CLASS] = config->is64 ? ELFCLASS64 : ELFCLASS32;
   eHdr->e_ident[EI_DATA] = config->isLE ? ELFDATA2LSB : ELFDATA2MSB;
   eHdr->e_ident[EI_VERSION] = EV_CURRENT;
-  eHdr->e_ident[EI_OSABI] = config->osabi;
+  eHdr->e_ident[EI_OSABI] = (config->osabi == ELFOSABI_PS4) ? ELFOSABI_FREEBSD : config->osabi;
   eHdr->e_ident[EI_ABIVERSION] = getAbiVersion();
   eHdr->e_machine = config->emachine;
   eHdr->e_version = EV_CURRENT;

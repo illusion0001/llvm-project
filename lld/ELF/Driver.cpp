@@ -141,6 +141,11 @@ static std::tuple<ELFKind, uint16_t, uint8_t> parseEmulation(StringRef emul) {
     osabi = ELFOSABI_FREEBSD;
   }
 
+  if (s.endswith("_ps4")) {
+    s = s.drop_back(4);
+    osabi = ELFOSABI_PS4;
+  }
+
   std::pair<ELFKind, uint16_t> ret =
       StringSwitch<std::pair<ELFKind, uint16_t>>(s)
           .Cases("aarch64elf", "aarch64linux", {ELF64LEKind, EM_AARCH64})

@@ -118,6 +118,11 @@ enum {
   ET_DYN = 3,         // Shared object file
   ET_CORE = 4,        // Core file
   ET_LOOS = 0xfe00,   // Beginning of operating system-specific codes
+  // PS4 ELF types (OpenOrbis)
+  ET_SCE_EXEC = 0xfe00,
+  ET_SCE_EXEC_ASLR = 0xfe10,
+  ET_SCE_DYNAMIC = 0xfe18,
+  // End PS4 ELF types
   ET_HIOS = 0xfeff,   // Operating system-specific
   ET_LOPROC = 0xff00, // Beginning of processor-specific codes
   ET_HIPROC = 0xffff  // Processor-specific
@@ -362,6 +367,7 @@ enum {
   ELFOSABI_ARM = 97,           // ARM
   ELFOSABI_C6000_ELFABI = 64,  // Bare-metal TMS320C6000
   ELFOSABI_C6000_LINUX = 65,   // Linux TMS320C6000
+  ELFOSABI_PS4 = 254,          // Added by OpenOrbis
   ELFOSABI_STANDALONE = 255,   // Standalone (embedded) application
   ELFOSABI_LAST_ARCH = 255     // Last Architecture-specific OS ABI
 };
@@ -1329,6 +1335,11 @@ enum {
   PT_MIPS_RTPROC = 0x70000001,   // Runtime procedure table.
   PT_MIPS_OPTIONS = 0x70000002,  // Options segment.
   PT_MIPS_ABIFLAGS = 0x70000003, // Abiflags segment.
+
+  // PS4 program header types (OpenOrbis).
+  PT_SCE_DYNLIBDATA = 0x61000000, // PS4 dynamic linking data
+  PT_SCE_PROC_PARAM = 0x61000001, // PS4 process parameters
+  PT_SCE_RELRO = 0x61000010, // PS4 read-only relocations
 };
 
 // Segment flag bits.

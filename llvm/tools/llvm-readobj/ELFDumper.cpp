@@ -1002,6 +1002,11 @@ const EnumEntry<unsigned> ElfObjectFileType[] = {
   {"Executable",   "EXEC (Executable file)",   ELF::ET_EXEC},
   {"SharedObject", "DYN (Shared object file)", ELF::ET_DYN},
   {"Core",         "CORE (Core file)",         ELF::ET_CORE},
+  // ----- Start OpenOrbis Change -----
+  {"SCE_Executable", "SCE EXEC (Playstation Executable file)",                   ELF::ET_SCE_EXEC},
+  {"SCE_ASLR_Executable", "SCE ASLR EXEC (Playstation Executable file w/ ASLR)", ELF::ET_SCE_EXEC_ASLR},
+  {"SCE_SharedObject", "SCE PRX (Playstation library file)",                     ELF::ET_SCE_DYNAMIC},
+  // ----- End OpenOrbis Change -----
 };
 
 const EnumEntry<unsigned> ElfOSABI[] = {
@@ -1393,6 +1398,12 @@ static StringRef segmentTypeToString(unsigned Arch, unsigned Type) {
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OPENBSD_RANDOMIZE);
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OPENBSD_WXNEEDED);
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OPENBSD_BOOTDATA);
+
+    // ----- Start OpenOrbis Change -----
+    LLVM_READOBJ_ENUM_CASE(ELF, PT_SCE_DYNLIBDATA);
+    LLVM_READOBJ_ENUM_CASE(ELF, PT_SCE_PROC_PARAM);
+    LLVM_READOBJ_ENUM_CASE(ELF, PT_SCE_RELRO);
+    // ----- End OpenOrbis Change -----
   default:
     return "";
   }
