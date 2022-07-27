@@ -241,13 +241,21 @@ void toolchains::PS4CPU::addClangTargetOptions(
     const ArgList &DriverArgs, ArgStringList &CC1Args,
     Action::OffloadKind DeviceOffloadingKind) const {
   // PS4 does not use init arrays.
-  if (DriverArgs.hasArg(options::OPT_fuse_init_array)) {
-    Arg *A = DriverArgs.getLastArg(options::OPT_fuse_init_array);
-    getDriver().Diag(clang::diag::err_drv_unsupported_opt_for_target)
-        << A->getAsString(DriverArgs) << getTriple().str();
-  }
+  //if (DriverArgs.hasArg(options::OPT_fuse_init_array)) {
+    //Arg *A = DriverArgs.getLastArg(options::OPT_fuse_init_array);
+    //getDriver().Diag(clang::diag::err_drv_unsupported_opt_for_target)
+    //    << A->getAsString(DriverArgs) << getTriple().str();
+  //}
 
-  CC1Args.push_back("-fno-use-init-array");
+  //CC1Args.push_back("-fno-use-init-array");
+
+  // ----- Start OpenOrbis Change -----
+  // It does now!
+  if (!DriverArgs.hasArg(options::OPT_fuse_init_array,
+                          options::OPT_fno_use_init_array,
+                          getTriple().getOSMajorVersion() >= 12))
+    CC1Args.push_back("-fno-use-init-array");
+  // ----- End OpenOrbis Change -----
 
   const Arg *A =
       DriverArgs.getLastArg(options::OPT_fvisibility_from_dllstorageclass,
