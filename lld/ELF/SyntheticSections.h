@@ -662,6 +662,21 @@ public:
   void finalizeContents() override;
 };
 
+// ----- Start OpenOrbis Change -----
+template <class ELFT> class SceDynlibdataSection final : public SyntheticSection {
+  LLVM_ELF_IMPORT_TYPES_ELFT(ELFT)
+
+public:
+  SceDynlibdataSection();
+  void finalizeContents() override;
+  void writeTo(uint8_t *buf) override;
+  size_t getSize() const override { return size; }
+
+private:
+  uint64_t size = 0;
+};
+// ----- End OpenOrbis Change -----
+
 // Outputs GNU Hash section. For detailed explanation see:
 // https://blogs.oracle.com/ali/entry/gnu_hash_elf_sections
 class GnuHashTableSection final : public SyntheticSection {
@@ -1213,6 +1228,9 @@ struct Partition {
   std::unique_ptr<SymbolTableBaseSection> dynSymTab;
   std::unique_ptr<EhFrameHeader> ehFrameHdr;
   std::unique_ptr<EhFrameSection> ehFrame;
+  // ----- Start OpenOrbis Change -----
+  std::unique_ptr<SyntheticSection> sceDynlibdata;
+  // ----- End OpenOrbis Change -----
   std::unique_ptr<GnuHashTableSection> gnuHashTab;
   std::unique_ptr<HashTableSection> hashTab;
   std::unique_ptr<RelocationBaseSection> relaDyn;

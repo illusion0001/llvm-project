@@ -2335,6 +2335,79 @@ size_t SymtabShndxSection::getSize() const {
   return in.symTab->getNumSymbols() * 4;
 }
 
+// ----- Start OpenOrbis Change -----
+template <class ELFT>
+SceDynlibdataSection<ELFT>::SceDynlibdataSection()
+    : SyntheticSection(SHF_ALLOC, SHT_PROGBITS, 16, ".sce_dynlibdata") {
+}
+
+template <class ELFT> void SceDynlibdataSection<ELFT>::finalizeContents() {
+  // Fingerprint is 24 bytes
+  size = 0x18;
+
+  // Module table is flexible, needs to be calculated by iterating shared files, starts with null entry
+  size += 1;
+
+  for (SharedFile *file : sharedFiles) {
+    if (file->isNeeded) {
+      // Length + 1 (library is .prx, one extra character than .so) + 1 null terminator
+      size += file->soName.size() + 1 + 1;
+      // Length - 3 (module does not include extension) + 1 null terminator
+      size += file->soName.size() - 3 + 1;
+    }
+  }
+
+  // Project metadata is 22 bytes
+  size += 0x16;
+}
+
+template <class ELFT> void SceDynlibdataSection<ELFT>::writeTo(uint8_t *buf) {
+  std::string moduleName;
+  std::string libName;
+  std::string::size_type extpos;
+
+  // Write fingerprint
+  char sceFingerprint[] = "OPENORBIS-LLVM-HOMEBREW";
+  memset((char*) buf, 0, 0x18);
+  strcpy((char*) buf, (const char *)&sceFingerprint);
+  buf += 0x18;
+
+  // Write module table, starts with null entry
+  buf[0] = 0;
+  buf++;
+
+  for (SharedFile *file : sharedFiles) {
+    if (file->isNeeded) {
+      libName = std::string(file->soName);
+      extpos = libName.find(".so");
+      if (extpos != std::string::npos)
+        libName.replace(extpos, sizeof(".prx"), ".prx");
+      strcpy((char*) buf, libName.c_str());
+      buf += libName.length() + 1;
+    }
+  }
+
+  for (SharedFile *file : sharedFiles) {
+    if (file->isNeeded) {
+      moduleName = std::string(file->soName);
+      extpos = moduleName.find(".so");
+      if (extpos != std::string::npos)
+        moduleName.erase(extpos, 3);
+      strcpy((char*) buf, moduleName.c_str());
+      buf += moduleName.length() + 1;
+    }
+  }
+
+  // Write project metadata
+  char sceProjectFile[] = "homebrew.elf";
+  char sceProjectName[] = "homebrew";
+  strcpy((char*) buf, (const char *) &sceProjectFile);
+  buf += sizeof(sceProjectFile);
+  strcpy((char*) buf, (const char *) &sceProjectName);
+  buf += sizeof(sceProjectName);
+}
+// ----- End OpenOrbis Change -----
+
 // .hash and .gnu.hash sections contain on-disk hash tables that map
 // symbol names to their dynamic symbol table indices. Their purpose
 // is to help the dynamic linker resolve symbols quickly. If ELF files
@@ -3882,6 +3955,13 @@ template class elf::MipsReginfoSection<ELF32LE>;
 template class elf::MipsReginfoSection<ELF32BE>;
 template class elf::MipsReginfoSection<ELF64LE>;
 template class elf::MipsReginfoSection<ELF64BE>;
+
+// ----- Start OpenOrbis Changes -----
+template class elf::SceDynlibdataSection<ELF32LE>;
+template class elf::SceDynlibdataSection<ELF32BE>;
+template class elf::SceDynlibdataSection<ELF64LE>;
+template class elf::SceDynlibdataSection<ELF64BE>;
+// ----- End OpenOrbis Changes -----
 
 template class elf::DynamicSection<ELF32LE>;
 template class elf::DynamicSection<ELF32BE>;

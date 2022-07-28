@@ -392,6 +392,13 @@ template <class ELFT> void elf::createSyntheticSections() {
         add(*part.hashTab);
       }
 
+      // ----- Start OpenOrbis Change -----
+      if (config->osabi == ELFOSABI_PS4) {
+        part.sceDynlibdata = std::make_unique<SceDynlibdataSection<ELFT>>();
+        add(*part.sceDynlibdata);
+      }
+      // ----- End OpenOrbis Change -----
+
       add(*part.dynamic);
       add(*part.dynStrTab);
       add(*part.relaDyn);
@@ -2104,6 +2111,10 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
       finalizeSynthetic(part.ehFrameHdr.get());
       finalizeSynthetic(part.verSym.get());
       finalizeSynthetic(part.verNeed.get());
+      // ----- Start OpenOrbis Change -----
+      if (config->osabi == ELFOSABI_PS4)
+        finalizeSynthetic(part.sceDynlibdata.get());
+      // ----- End OpenOrbis Change -----
       finalizeSynthetic(part.dynamic.get());
     }
   }
