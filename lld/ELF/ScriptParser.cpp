@@ -1483,11 +1483,11 @@ unsigned ScriptParser::readPhdrType() {
                      .Case("PT_OPENBSD_RANDOMIZE", PT_OPENBSD_RANDOMIZE)
                      .Case("PT_OPENBSD_WXNEEDED", PT_OPENBSD_WXNEEDED)
                      .Case("PT_OPENBSD_BOOTDATA", PT_OPENBSD_BOOTDATA)
-                     // ----- Start OpenOrbis Change -----
+                     // ----- Start OpenOrbis Changes -----
                      .Case("PT_SCE_DYNLIBDATA", PT_SCE_DYNLIBDATA)
                      .Case("PT_SCE_PROC_PARAM", PT_SCE_PROC_PARAM)
                      .Case("PT_SCE_RELRO", PT_SCE_RELRO)
-                     // ----- End OpenOrbis Change -----
+                     // ----- End OpenOrbis Changes -----
                      .Default(-1);
 
   if (ret == (unsigned)-1) {

@@ -122,7 +122,7 @@ DYNAMIC_TAG(VERNEED, 0X6FFFFFFE)    // The address of the version dependency
                                     // table.
 DYNAMIC_TAG(VERNEEDNUM, 0X6FFFFFFF) // The number of entries in DT_VERNEED.
 
-// ----- Start OpenOrbis Change -----
+// ----- Start OpenOrbis Changes -----
 // PS4 specific dynamic table entry tags (OpenOrbis)
 DYNAMIC_TAG(SCE_FINGERPRINT, 0x61000007)
 DYNAMIC_TAG(SCE_FILENAME, 0x61000009)
@@ -151,7 +151,7 @@ DYNAMIC_TAG(SCE_SYMTAB, 0x61000039)
 DYNAMIC_TAG(SCE_SYMENT, 0x6100003B)
 DYNAMIC_TAG(SCE_HASHSZ, 0x6100003D)
 DYNAMIC_TAG(SCE_SYMTABSZ, 0x6100003F)
-// ----- End OpenOrbis Change -----
+// ----- End OpenOrbis Changes -----
 
 // AArch64 specific dynamic table entries
 AARCH64_DYNAMIC_TAG(AARCH64_BTI_PLT, 0x70000001)
