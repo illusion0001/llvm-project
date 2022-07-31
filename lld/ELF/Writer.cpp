@@ -394,8 +394,16 @@ template <class ELFT> void elf::createSyntheticSections() {
 
       // ----- Start OpenOrbis Change -----
       if (config->osabi == ELFOSABI_PS4) {
-        part.sceDynlibdata = std::make_unique<SceDynlibdataSection<ELFT>>();
-        add(*part.sceDynlibdata);
+        part.sceDynlibdataFingerprint = std::make_unique<SceDynlibdataFingerprintSection<ELFT>>();
+        add(*part.sceDynlibdataFingerprint);
+        //part.sceDynlibdataModuleTab = std::make_unique<SceDynlibdataModuleTabSection<ELFT>>();
+        //add(*part.sceDynlibdataModuleTab);
+        //part.sceDynlibdataMetadata = std::make_unique<SceDynlibdataMetadataSection<ELFT>>();
+        //add(*part.sceDynlibdataMetadata);
+        //part.sceDynlibdataNidTab = std::make_unique<SceDynlibdataNidTabSection<ELFT>>();
+        //add(*part.sceDynlibdataNidTab);
+        //part.sceDynlibdataSymTab = std::make_unique<SceDynlibdataSymTabSection<ELFT>>();
+        //add(*part.sceDynlibdataSymTab);
       }
       // ----- End OpenOrbis Change -----
 
@@ -1970,6 +1978,12 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
     }
   }
 
+  // ----- Start OpenOrbis Changes -----
+  // Symbol *section_sym = symtab->addSymbol(Undefined{
+  //       nullptr, "", STB_LOCAL, STV_DEFAULT, STT_SECTION});
+  // partitions[0].dynSymTab->addSymbol(section_sym);
+  // ----- End OpenOrbis Changes -----
+
   {
     llvm::TimeTraceScope timeScope("Add symbols to symtabs");
     // Now that we have defined all possible global symbols including linker-
@@ -2112,8 +2126,13 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
       finalizeSynthetic(part.verSym.get());
       finalizeSynthetic(part.verNeed.get());
       // ----- Start OpenOrbis Change -----
-      if (config->osabi == ELFOSABI_PS4)
-        finalizeSynthetic(part.sceDynlibdata.get());
+      if (config->osabi == ELFOSABI_PS4) {
+        finalizeSynthetic(part.sceDynlibdataFingerprint.get());
+        // finalizeSynthetic(part.sceDynlibdataModuleTab.get());
+        // finalizeSynthetic(part.sceDynlibdataMetadata.get());
+        // finalizeSynthetic(part.sceDynlibdataNidTab.get());
+        // finalizeSynthetic(part.sceDynlibdataSymTab.get());
+      }
       // ----- End OpenOrbis Change -----
       finalizeSynthetic(part.dynamic.get());
     }
@@ -2656,6 +2675,14 @@ template <class ELFT> void Writer<ELFT>::setPhdrs(Partition &part) {
       p->p_memsz = alignTo(p->p_offset + p->p_memsz, config->commonPageSize) -
                    p->p_offset;
     }
+
+    // ----- Start OpenOrbis Changes -----
+      if (p->p_type == PT_SCE_DYNLIBDATA) {
+        p->p_memsz = 0;
+        p->p_vaddr = 0;
+        p->p_paddr = 0;
+      }
+      // ----- End OpenOrbis Changes -----
   }
 }
 

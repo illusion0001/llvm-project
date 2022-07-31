@@ -62,6 +62,8 @@ constexpr size_t MergeNoTailSection::numShards;
 // ----- Start OpenOrbis Changes -----
 SmallVector<size_t, 0> sceModuleOffsets;
 SmallVector<size_t, 0> sceLibraryOffsets;
+SmallVector<std::string, 0> sceModuleList;
+bool sceModuleListInit = false;
 size_t sceStrTabOffset;
 size_t sceStrTabSize;
 size_t sceFileNameOffset;
@@ -69,6 +71,7 @@ size_t sceSymTabOffset;
 size_t sceSymTabSize;
 size_t sceSymTabPad;
 size_t sceNidTableOffset;
+size_t sceNidCount;
 // ----- End OpenOrbis Changes -----
 
 static uint64_t readUint(uint8_t *buf) {
@@ -1355,25 +1358,30 @@ DynamicSection<ELFT>::computeContents() {
   // ----- Start OpenOrbis Changes -----
   uint64_t moduleId = 1;
   uint64_t moduleValue = 0;
+  uint64_t moduleOffset = 0;
   uint64_t libraryValue = 0;
   uint64_t libraryAttrValue = 0;
-  const InputSection &sceDynlibdataSec = *part.sceDynlibdata;
+  std::string libName;
+  std::string moduleName;
+  std::string::size_type extpos;
+  const InputSection &sceDynlibdataSec = *part.sceDynlibdataFingerprint;
 
   for (SharedFile *file : sharedFiles) {
     if (file->isNeeded) {
       if (config->osabi == ELFOSABI_PS4) {
         // Add needed
         addInt(DT_NEEDED, sceLibraryOffsets[moduleId - 1]);
+        moduleOffset = sceModuleOffsets[moduleId - 1];
 
         // Add sce import module
-        moduleValue = sceModuleOffsets[moduleId - 1];
+        moduleValue = moduleOffset;
         moduleValue |= (1UL << 32); // Major version
         moduleValue |= (1UL << 40); // Minor version
         moduleValue |= (moduleId << 48); // Module ID
         addInt(DT_SCE_NEEDED_MODULE, moduleValue);
 
         // Add sce import lib
-        libraryValue = sceModuleOffsets[moduleId - 1];
+        libraryValue = moduleOffset;
         libraryValue |= (1UL << 32); // Version
         libraryValue |= (moduleId << 48); // Module ID
         addInt(DT_SCE_IMPORT_LIB, libraryValue);
@@ -1382,6 +1390,8 @@ DynamicSection<ELFT>::computeContents() {
         libraryAttrValue = 0x9; // Attributes (always 0x9)
         libraryAttrValue |= (moduleId << 48); // Module ID
         addInt(DT_SCE_IMPORT_LIB_ATTR, libraryAttrValue);
+
+        moduleId++;
       } else {
         addInt(DT_NEEDED, part.dynStrTab->addString(file->soName));
       }
@@ -1555,13 +1565,21 @@ DynamicSection<ELFT>::computeContents() {
 
   if (config->osabi == ELFOSABI_PS4) {
     // Symbol table (TODO)
-    addInt(DT_SCE_SYMTAB, 0);
-    addInt(DT_SCE_SYMTABSZ, 0);
+    const InputSection &symSec = *part.dynSymTab;
+    if (sceDynlibdataSec.getVA() > symSec.getVA()) {
+      warn("Dynamic symbol table should come after .sce_dynlibdata segment, check the linker script");
+    }
+    addInt(DT_SCE_SYMTAB, symSec.getVA() - sceDynlibdataSec.getVA());
+    addInt(DT_SCE_SYMTABSZ, part.dynSymTab->getSize());
     addInt(DT_SCE_SYMENT, sizeof(Elf_Sym));
 
     // String table
-    addInt(DT_SCE_STRTAB, sceStrTabOffset);
-    addInt(DT_SCE_STRSZ, sceStrTabSize);
+    const InputSection &strSec = *part.dynStrTab;
+    if (sceDynlibdataSec.getVA() > strSec.getVA()) {
+      warn("Dynamic string table should come after .sce_dynlibdata segment, check the linker script");
+    }
+    addInt(DT_SCE_STRTAB, strSec.getVA() - sceDynlibdataSec.getVA());
+    addInt(DT_SCE_STRSZ, part.dynStrTab->getSize());
 
     // Hash table
     const InputSection &hashSec = *part.hashTab;
@@ -1796,6 +1814,12 @@ void RelocationBaseSection::finalizeContents() {
 void DynamicReloc::computeRaw(SymbolTableBaseSection *symtab) {
   r_offset = getOffset();
   r_sym = getSymIndex(symtab);
+  // ----- Start OpenOrbis Changes -----
+  // if (config->osabi == ELFOSABI_PS4) {
+  //   // On PS4 we need to increment the sym reference by 1 because we add an STT_SECTION symbol
+  //   r_sym++;
+  // }
+  // ----- End OpenOrbis Changes -----
   addend = computeAddend();
   kind = AddendOnly; // Catch errors
 }
@@ -2270,12 +2294,114 @@ void SymbolTableBaseSection::sortSymTabSymbols() {
       *i++ = entry;
 }
 
+// ----- Start OpenOrbis Changes -----
+std::string generateNID(Symbol *b) {
+  std::array<uint8_t, 8> nidHashTruncated;
+  std::string symNameNID;
+  std::string finalNID;
+  char encodedModuleId;
+  int moduleId;
+  int i;
+
+  // Add suffix
+  symNameNID = b->getName().str() + "\x51\x8D\x64\xA6\x35\xDE\xD8\xC1\xE6\xB0\x39\xB1\xC3\xE5\x52\x30";
+  auto nidHash = llvm::SHA1::hash(llvm::arrayRefFromStringRef(symNameNID));
+
+  // Reverse digest, take first 8 bytes, and base64 encode without trailing '='
+  std::reverse_copy(nidHash.begin(), nidHash.begin() + nidHashTruncated.size(), nidHashTruncated.begin());
+
+  auto nid = llvm::encodeBase64(nidHashTruncated);
+  nid = nid.substr(0, nid.length() - 1);
+
+  // Replace forward slashes with dashes for encoding
+  std::replace(nid.begin(), nid.end(), '/', '-');
+
+  // Get containing file for symbol
+  if (b->file == nullptr) {
+    warn("sym '" + b->getName().str() + "' has null file ptr");
+  }
+  auto symFileName = b->file->getName().str();
+
+  // Find module index for NID
+  moduleId = -1;
+  i = 1;
+  for (auto module : sceModuleList) {
+    if (symFileName.find(module) != std::string::npos) {
+      moduleId = i;
+      break;
+    }
+    i++;
+  }
+
+  if (moduleId < 0)
+    warn("2 unable to find module for symbol '" + b->getName().str() + "'");
+
+  // Finalize NID. Format: [NID]#[Module Index]#[Library Index]
+  encodedModuleId = char('A' + moduleId);
+  finalNID = nid + "#" + encodedModuleId + "#" + encodedModuleId;
+  return finalNID;
+}
+// ----- End OpenOrbis Changes -----
+
 void SymbolTableBaseSection::addSymbol(Symbol *b) {
   // Adding a local symbol to a .dynsym is a bug.
   assert(this->type != SHT_DYNSYM || !b->isLocal());
 
-  bool hashIt = b->isLocal() && config->optimize >= 2;
-  symbols.push_back({b, strTabSec.addString(b->getName(), hashIt)});
+  // ----- Start OpenOrbis Changes -----
+  std::string libName;
+  std::string moduleName;
+  llvm::StringRef libNameRef;
+  llvm::StringRef moduleNameRef;
+  std::string::size_type extpos;
+
+  // Dynamic symbol table is generated differently on PS4 elfs, we need to account for NIDs
+  if (config->osabi == ELFOSABI_PS4 && this == mainPart->dynSymTab.get()) {
+    // If we don't have a module list, we need to create one to track the NID -> module mapping
+    if (!sceModuleListInit) {
+      for (SharedFile *file : sharedFiles) {
+        if (file->isNeeded) {
+          sceModuleList.push_back(file->soName.str());
+
+          // Create lib name string and add it to the dynstr table
+          libName = std::string(file->soName);
+          extpos = libName.find(".so");
+          if (extpos != std::string::npos)
+            libName.replace(extpos, sizeof(".prx"), ".prx");
+
+          libNameRef = saver().save(libName);
+          sceLibraryOffsets.push_back(strTabSec.addString(libNameRef, false));
+        }
+      }
+
+      for (auto module : sceModuleList) {
+        // Create module name string and add it to the dynstr table
+        moduleName = std::string(module);
+        extpos = moduleName.find(".so");
+        if (extpos != std::string::npos)
+          moduleName.erase(extpos, 3);
+
+        moduleNameRef = saver().save(moduleName);
+        sceModuleOffsets.push_back(strTabSec.addString(moduleNameRef, false));
+      }
+
+      sceModuleListInit = true;
+    }
+
+    if (b->file) {
+      // If the symbol has a defined section, it's not of interest to the PS4 linker
+      if (isa<Defined>(b)) {
+        return;
+      }
+
+      std::string nidStr = generateNID(b);
+      llvm::StringRef nidStrRef = saver().save(nidStr);
+      symbols.push_back({b, strTabSec.addString(nidStrRef, false)});
+    }
+  } else {
+    bool hashIt = b->isLocal() && config->optimize >= 2;
+    symbols.push_back({b, strTabSec.addString(b->getName(), hashIt)});
+  }
+  // ----- End OpenOrbis Changes -----
 }
 
 size_t SymbolTableBaseSection::getSymbolIndex(Symbol *sym) {
@@ -2451,7 +2577,236 @@ size_t SymtabShndxSection::getSize() const {
 }
 
 // ----- Start OpenOrbis Changes -----
+
 template <class ELFT>
+SceDynlibdataFingerprintSection<ELFT>::SceDynlibdataFingerprintSection()
+    : SyntheticSection(SHF_ALLOC, SHT_PROGBITS, 16, ".sce_dynlibdata.fingerprint") {
+}
+
+template <class ELFT> void SceDynlibdataFingerprintSection<ELFT>::finalizeContents() {
+  // Fingerprint is always 0x18 bytes
+  size = 0x18;
+
+  // Dynamic string table always comes after fingerprint
+  sceStrTabOffset = size;
+}
+
+template <class ELFT> void SceDynlibdataFingerprintSection<ELFT>::writeTo(uint8_t *buf) {
+  char sceFingerprint[] = "OPENORBIS-LLVM-HOMEBREW";
+  strcpy((char*) buf, (const char *)&sceFingerprint);
+}
+
+/*template <class ELFT>
+SceDynlibdataModuleTabSection<ELFT>::SceDynlibdataModuleTabSection()
+    : SyntheticSection(SHF_ALLOC, SHT_PROGBITS, 1, ".sce_dynlibdata.modules") {
+}
+
+template <class ELFT> void SceDynlibdataModuleTabSection<ELFT>::finalizeContents() {
+  size = 0;
+
+  // Iterate shared files to calculate size. Table starts with null entry.
+  for (SharedFile *file : sharedFiles) {
+    if (file->isNeeded) {
+      sceLibraryOffsets.push_back(size);
+      // Length + 1 (library is .prx, one extra character than .so) + 1 null terminator
+      size += file->soName.size() + 1 + 1;
+
+      sceModuleOffsets.push_back(size);
+      // Length - 3 (module does not include extension) + 1 null terminator
+      size += file->soName.size() - 3 + 1;
+    }
+  }
+}
+
+template <class ELFT> void SceDynlibdataModuleTabSection<ELFT>::writeTo(uint8_t *buf) {
+  std::string moduleName;
+  std::string libName;
+  std::string::size_type extpos;
+
+  // Write null entry
+  buf[0] = 0;
+  buf++;
+
+  // Write libraries
+  for (SharedFile *file : sharedFiles) {
+    if (file->isNeeded) {
+      libName = std::string(file->soName);
+      extpos = libName.find(".so");
+      if (extpos != std::string::npos)
+        libName.replace(extpos, sizeof(".prx"), ".prx");
+      strcpy((char*) buf, libName.c_str());
+      buf += libName.length() + 1;
+    }
+  }
+
+  // Write modules
+  for (SharedFile *file : sharedFiles) {
+    if (file->isNeeded) {
+      moduleName = std::string(file->soName);
+      extpos = moduleName.find(".so");
+      if (extpos != std::string::npos)
+        moduleName.erase(extpos, 3);
+      strcpy((char*) buf, moduleName.c_str());
+      buf += moduleName.length() + 1;
+      sceModuleList.push_back(moduleName);
+    }
+  }
+}
+
+template <class ELFT>
+SceDynlibdataMetadataSection<ELFT>::SceDynlibdataMetadataSection()
+    : SyntheticSection(SHF_ALLOC, SHT_PROGBITS, 1, ".sce_dynlibdata.metadata") {
+}
+
+template <class ELFT> void SceDynlibdataMetadataSection<ELFT>::finalizeContents() {
+  size = 0x16;
+}
+
+template <class ELFT> void SceDynlibdataMetadataSection<ELFT>::writeTo(uint8_t *buf) {
+  char sceProjectFile[] = "homebrew.elf";
+  char sceProjectName[] = "homebrew";
+
+  strcpy((char*) buf, (const char *) &sceProjectName);
+  buf += sizeof(sceProjectName);
+  strcpy((char*) buf, (const char *) &sceProjectFile);
+  buf += sizeof(sceProjectFile);
+}
+
+template <class ELFT>
+SceDynlibdataNidTabSection<ELFT>::SceDynlibdataNidTabSection()
+    : SyntheticSection(SHF_ALLOC, SHT_PROGBITS, 1, ".sce_dynlibdata.nidtab") {
+}
+
+template <class ELFT> void SceDynlibdataNidTabSection<ELFT>::finalizeContents() {
+  std::string symFileName;
+
+  // Calculate how many NIDs we'll need to generate, each entry is 0x10 bytes
+  sceNidCount = 0;
+  for (const SymbolTableEntry &entry : in.symTab->getSymbols()) {
+    Symbol *sym = entry.sym;
+
+    if (!sym->includeInDynsym())
+      continue;
+
+    symFileName = sym->file->getName().str();
+    if (symFileName.find(".so") == std::string::npos) {
+      continue;
+    }
+
+    // NID will be written at this point
+    sceNidCount++;
+  }
+
+  size = sceNidCount * 0x10;
+}
+
+template <class ELFT> void SceDynlibdataNidTabSection<ELFT>::writeTo(uint8_t *buf) {
+  std::string symName;
+  std::string symNameNID;
+  std::string symFileName;
+
+  for (const SymbolTableEntry &entry : in.symTab->getSymbols()) {
+    Symbol *sym = entry.sym;
+
+    if (!sym->includeInDynsym())
+      continue;
+
+    symName = sym->getName().str();
+    symFileName = sym->file->getName().str();
+
+    if (symFileName.find(".so") == std::string::npos) {
+      continue;
+    }
+
+    // If we've made it here, we should make an NID entry for it
+    symNameNID = symName + "\x51\x8D\x64\xA6\x35\xDE\xD8\xC1\xE6\xB0\x39\xB1\xC3\xE5\x52\x30";
+    std::array<uint8_t, 8> nidHashTruncated;
+    auto nidHash = llvm::SHA1::hash(llvm::arrayRefFromStringRef(symNameNID));
+
+    std::reverse_copy(nidHash.begin(), nidHash.begin() + nidHashTruncated.size(), nidHashTruncated.begin());
+
+    auto nid = llvm::encodeBase64(nidHashTruncated);
+    nid = nid.substr(0, nid.length() - 1);
+
+    // Find module index for NID
+    int module_id = -1;
+    int i = 1;
+    for (auto module : sceModuleList) {
+      if (symFileName.find(module) != std::string::npos) {
+        module_id = i;
+      }
+      i++;
+    }
+
+    if (module_id < 0)
+      warn("unable to find module for symbol '" + symName + "'");
+
+    // Write NID into the table. Format: [NID]#[Module Index]#[Library Index]
+    char encoded_module_id = char('A' + module_id);
+    std::string nidEntry = nid + "#" + encoded_module_id + "#" + encoded_module_id;
+    strcpy((char*) buf, nidEntry.c_str());
+    buf += nidEntry.length() + 1;
+  }
+}
+
+template <class ELFT>
+SceDynlibdataSymTabSection<ELFT>::SceDynlibdataSymTabSection()
+    : SyntheticSection(SHF_ALLOC, SHT_PROGBITS, 8, ".sce_dynlibdata.symtab") {
+}
+
+template <class ELFT> void SceDynlibdataSymTabSection<ELFT>::finalizeContents() {
+  // Symbol table will consist of 2 static entries + imports/exports
+  // TODO: Account for exports
+  size = 2 * sizeof(Elf_Sym);
+  size += sceNidCount * sizeof(Elf_Sym);
+}
+
+template <class ELFT> void SceDynlibdataSymTabSection<ELFT>::writeTo(uint8_t *buf) {
+  std::string symName;
+  std::string symFileName;
+  size_t i;
+
+  // Get partition so we can access other sections
+  elf::Partition &part = getPartition();
+
+  // First two symbols are always no type entry and section entry
+  auto *sceSym = reinterpret_cast<Elf_Sym *>(buf);
+  sceSym++;
+
+  sceSym->setBindingAndType(STB_LOCAL, STT_SECTION);
+  sceSym++;
+
+  i = 0;
+  for (const SymbolTableEntry &entry : in.symTab->getSymbols()) {
+    Symbol *sym = entry.sym;
+
+    if (!sym->includeInDynsym())
+      continue;
+
+    symName = sym->getName().str();
+    symFileName = sym->file->getName().str();
+
+    if (symFileName.find(".so") == std::string::npos)
+      continue;
+
+    // TODO: exports/libs
+
+    // Add symbol entry
+    auto &moduleTabSection = *part.sceDynlibdataModuleTab;
+    auto &nidTabSection = *part.sceDynlibdataNidTab;
+    auto nidBaseOffset = nidTabSection.getVA() - moduleTabSection.getVA();
+    sceSym->st_name = nidBaseOffset + (i * 0x10);
+    sceSym->setBindingAndType(sym->binding, sym->type);
+
+    // Advance to next symbol
+    sceSym++;
+    i++;
+  }
+}*/
+
+/////
+
+/*template <class ELFT>
 SceDynlibdataSection<ELFT>::SceDynlibdataSection()
     : SyntheticSection(SHF_ALLOC, SHT_PROGBITS, 16, ".sce_dynlibdata") {
 }
@@ -2470,11 +2825,11 @@ template <class ELFT> void SceDynlibdataSection<ELFT>::finalizeContents() {
 
   for (SharedFile *file : sharedFiles) {
     if (file->isNeeded) {
-      sceLibraryOffsets.push_back(size);
+      //sceLibraryOffsets.push_back(size);
       // Length + 1 (library is .prx, one extra character than .so) + 1 null terminator
       size += file->soName.size() + 1 + 1;
 
-      sceModuleOffsets.push_back(size);
+      //sceModuleOffsets.push_back(size);
       // Length - 3 (module does not include extension) + 1 null terminator
       size += file->soName.size() - 3 + 1;
     }
@@ -2649,7 +3004,7 @@ template <class ELFT> void SceDynlibdataSection<ELFT>::writeTo(uint8_t *buf) {
     sceSym++;
     i++;
   }
-}
+}*/
 // ----- End OpenOrbis Changes -----
 
 // .hash and .gnu.hash sections contain on-disk hash tables that map
@@ -4201,10 +4556,35 @@ template class elf::MipsReginfoSection<ELF64LE>;
 template class elf::MipsReginfoSection<ELF64BE>;
 
 // ----- Start OpenOrbis Changes -----
-template class elf::SceDynlibdataSection<ELF32LE>;
-template class elf::SceDynlibdataSection<ELF32BE>;
-template class elf::SceDynlibdataSection<ELF64LE>;
-template class elf::SceDynlibdataSection<ELF64BE>;
+// template class elf::SceDynlibdataSection<ELF32LE>;
+// template class elf::SceDynlibdataSection<ELF32BE>;
+// template class elf::SceDynlibdataSection<ELF64LE>;
+// template class elf::SceDynlibdataSection<ELF64BE>;
+
+template class elf::SceDynlibdataFingerprintSection<ELF32LE>;
+template class elf::SceDynlibdataFingerprintSection<ELF32BE>;
+template class elf::SceDynlibdataFingerprintSection<ELF64LE>;
+template class elf::SceDynlibdataFingerprintSection<ELF64BE>;
+
+// template class elf::SceDynlibdataModuleTabSection<ELF32LE>;
+// template class elf::SceDynlibdataModuleTabSection<ELF32BE>;
+// template class elf::SceDynlibdataModuleTabSection<ELF64LE>;
+// template class elf::SceDynlibdataModuleTabSection<ELF64BE>;
+
+// template class elf::SceDynlibdataMetadataSection<ELF32LE>;
+// template class elf::SceDynlibdataMetadataSection<ELF32BE>;
+// template class elf::SceDynlibdataMetadataSection<ELF64LE>;
+// template class elf::SceDynlibdataMetadataSection<ELF64BE>;
+
+// template class elf::SceDynlibdataNidTabSection<ELF32LE>;
+// template class elf::SceDynlibdataNidTabSection<ELF32BE>;
+// template class elf::SceDynlibdataNidTabSection<ELF64LE>;
+// template class elf::SceDynlibdataNidTabSection<ELF64BE>;
+
+// template class elf::SceDynlibdataSymTabSection<ELF32LE>;
+// template class elf::SceDynlibdataSymTabSection<ELF32BE>;
+// template class elf::SceDynlibdataSymTabSection<ELF64LE>;
+// template class elf::SceDynlibdataSymTabSection<ELF64BE>;
 // ----- End OpenOrbis Changes -----
 
 template class elf::DynamicSection<ELF32LE>;

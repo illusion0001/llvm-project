@@ -663,11 +663,24 @@ public:
 };
 
 // ----- Start OpenOrbis Change -----
-template <class ELFT> class SceDynlibdataSection final : public SyntheticSection {
+// template <class ELFT> class SceDynlibdataSection final : public SyntheticSection {
+//   LLVM_ELF_IMPORT_TYPES_ELFT(ELFT)
+
+// public:
+//   SceDynlibdataSection();
+//   void finalizeContents() override;
+//   void writeTo(uint8_t *buf) override;
+//   size_t getSize() const override { return size; }
+
+// private:
+//   uint64_t size = 0;
+// };
+
+template <class ELFT> class SceDynlibdataFingerprintSection final : public SyntheticSection {
   LLVM_ELF_IMPORT_TYPES_ELFT(ELFT)
 
 public:
-  SceDynlibdataSection();
+  SceDynlibdataFingerprintSection();
   void finalizeContents() override;
   void writeTo(uint8_t *buf) override;
   size_t getSize() const override { return size; }
@@ -675,6 +688,59 @@ public:
 private:
   uint64_t size = 0;
 };
+
+/*template <class ELFT> class SceDynlibdataModuleTabSection final : public SyntheticSection {
+  LLVM_ELF_IMPORT_TYPES_ELFT(ELFT)
+
+public:
+  SceDynlibdataModuleTabSection();
+  void finalizeContents() override;
+  void writeTo(uint8_t *buf) override;
+  size_t getSize() const override { return size; }
+
+private:
+  uint64_t size = 0;
+};
+
+template <class ELFT> class SceDynlibdataMetadataSection final : public SyntheticSection {
+  LLVM_ELF_IMPORT_TYPES_ELFT(ELFT)
+
+public:
+  SceDynlibdataMetadataSection();
+  void finalizeContents() override;
+  void writeTo(uint8_t *buf) override;
+  size_t getSize() const override { return size; }
+
+private:
+  uint64_t size = 0;
+};
+
+template <class ELFT> class SceDynlibdataNidTabSection final : public SyntheticSection {
+  LLVM_ELF_IMPORT_TYPES_ELFT(ELFT)
+
+public:
+  SceDynlibdataNidTabSection();
+  void finalizeContents() override;
+  void writeTo(uint8_t *buf) override;
+  size_t getSize() const override { return size; }
+
+private:
+  uint64_t size = 0;
+};
+
+template <class ELFT> class SceDynlibdataSymTabSection final : public SyntheticSection {
+  LLVM_ELF_IMPORT_TYPES_ELFT(ELFT)
+
+public:
+  SceDynlibdataSymTabSection();
+  void finalizeContents() override;
+  void writeTo(uint8_t *buf) override;
+  size_t getSize() const override { return size; }
+
+private:
+  uint64_t size = 0;
+};*/
+
 // ----- End OpenOrbis Change -----
 
 // Outputs GNU Hash section. For detailed explanation see:
@@ -1229,7 +1295,11 @@ struct Partition {
   std::unique_ptr<EhFrameHeader> ehFrameHdr;
   std::unique_ptr<EhFrameSection> ehFrame;
   // ----- Start OpenOrbis Change -----
-  std::unique_ptr<SyntheticSection> sceDynlibdata;
+  std::unique_ptr<SyntheticSection> sceDynlibdataFingerprint;
+  // std::unique_ptr<SyntheticSection> sceDynlibdataModuleTab;
+  // std::unique_ptr<SyntheticSection> sceDynlibdataMetadata;
+  // std::unique_ptr<SyntheticSection> sceDynlibdataNidTab;
+  // std::unique_ptr<SyntheticSection> sceDynlibdataSymTab;
   // ----- End OpenOrbis Change -----
   std::unique_ptr<GnuHashTableSection> gnuHashTab;
   std::unique_ptr<HashTableSection> hashTab;
