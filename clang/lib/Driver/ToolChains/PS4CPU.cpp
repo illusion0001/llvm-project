@@ -249,13 +249,13 @@ void toolchains::PS4CPU::addClangTargetOptions(
 
   //CC1Args.push_back("-fno-use-init-array");
 
-  // ----- Start OpenOrbis Change -----
-  // It does now!
+  // ----- Start OpenOrbis Changes -----
+  // It does now! Use init arrays by default
   if (!DriverArgs.hasArg(options::OPT_fuse_init_array,
                           options::OPT_fno_use_init_array,
-                          getTriple().getOSMajorVersion() >= 12))
+                          true))
     CC1Args.push_back("-fno-use-init-array");
-  // ----- End OpenOrbis Change -----
+  // ----- End OpenOrbis Changes -----
 
   const Arg *A =
       DriverArgs.getLastArg(options::OPT_fvisibility_from_dllstorageclass,
