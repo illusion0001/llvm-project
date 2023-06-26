@@ -105,5 +105,4 @@ jobs:
       working-directory: release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh release create "test-9999" libcxx-full.tar.gz --target ${{ GITHUB.SHA }} -t "test-8888"
+      run: gh release create "test-9999" libcxx-full.tar.gz --target ${{ GITHUB.SHA }} -t "test-8888"
