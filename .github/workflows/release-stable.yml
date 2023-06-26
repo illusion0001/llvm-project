@@ -18,7 +18,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         repository: OpenOrbis/OpenOrbis-PS4-Toolchain
-        path: oops4
+        path: OpenOrbis-PS4-Toolchain
 
     - name: Fetch musl
       run: curl -sL https://github.com/OpenOrbis/musl/releases/latest/download/musl.tar.gz | tar xz -C ./oops4
@@ -53,8 +53,8 @@ jobs:
         mkdir libcxxabi/build && cd libcxxabi/build
         cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" \
         -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 \
-        -I${{ github.workspace }}/oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 \
-        -D_LIBUNWIND_IS_BAREMETAL=1 -I${{ github.workspace }}/oops4/include" \
+        -I${{ github.workspace }}/OpenOrbis-PS4-Toolchain/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 \
+        -D_LIBUNWIND_IS_BAREMETAL=1 -I${{ github.workspace }}/OpenOrbis-PS4-Toolchain/include" \
         -DLLVM_PATH="../../llvm" -DLIBCXXABI_ENABLE_SHARED=NO \
         -DLIBCXXABI_ENABLE_STATIC=YES -DLIBCXXABI_ENABLE_EXCEPTIONS=YES \
         -DLIBCXXABI_USE_COMPILER_RT=YES -DLIBCXXABI_USE_LLVM_UNWINDER=YES \
@@ -71,7 +71,7 @@ jobs:
         -DLIBCXX_HAS_THREAD_API_PTHREAD=1 -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" \
         -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON -DLIBCXX_ENABLE_SHARED=OFF \
         -DLLVM_PATH="../../llvm" -DCMAKE_C_FLAGS="-DPS4 -fPIC" -DCMAKE_CXX_FLAGS="-DPS4 -fPIC" -DCMAKE_INSTALL_PREFIX="../../out" .. 
-        cmake -DCMAKE_SYSROOT="${{ github.workspace }}/oops4" ..
+        cmake -DCMAKE_SYSROOT="${{ github.workspace }}/OpenOrbis-PS4-Toolchain" ..
         make
         make install
 
