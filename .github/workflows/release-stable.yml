@@ -76,10 +76,9 @@ jobs:
         make install
 
     - name: Copy libs and headers
-      continue-on-error: true
       run: |
         mkdir -p release/lib
-        mkdir release/include
+        mkdir -p release/include
         cp -r compiler-rt/build/lib/linux/* release/lib/
         cp -r libcxx/build/lib/* release/lib/
         cp -r libcxxabi/build/lib/* release/lib/
@@ -88,10 +87,9 @@ jobs:
         rm -rf release/lib/abi
 
     - name: Create master libc++ archive
+      working-directory: release/lib
       run: |
-        cd release/lib
-        touch mri.txt
-        echo "CREATE libc++M.a"   >> mri.txt
+        echo "CREATE libc++M.a"    > mri.txt
         echo "ADDLIB libunwind.a" >> mri.txt
         echo "ADDLIB libc++abi.a" >> mri.txt
         echo "ADDLIB libc++.a"    >> mri.txt
@@ -102,27 +100,3 @@ jobs:
     - name: Create tarball
       working-directory: release
       run: tar -czf libcxx-full.tar.gz lib/* include/*
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          Automated build.
-        draft: false
-        prerelease: false
-
-    - name: Upload Release Asset
-      id: upload-release-asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: release/libcxx-full.tar.gz
-        asset_name: libcxx-full.tar.gz
-        asset_content_type: application/gzip
