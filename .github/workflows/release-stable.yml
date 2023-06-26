@@ -71,7 +71,7 @@ jobs:
         -DLIBCXX_HAS_THREAD_API_PTHREAD=1 -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" \
         -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON -DLIBCXX_ENABLE_SHARED=OFF \
         -DLLVM_PATH="../../llvm" -DCMAKE_C_FLAGS="-DPS4 -fPIC" -DCMAKE_CXX_FLAGS="-DPS4 -fPIC" -DCMAKE_INSTALL_PREFIX="../../out" .. 
-        cmake -DCMAKE_SYSROOT="../../../oops4" ..
+        cmake -DCMAKE_SYSROOT="${{ github.workspace }}/oops4" ..
         make
         make install
 
