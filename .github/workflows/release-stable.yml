@@ -104,6 +104,6 @@ jobs:
     - name: Create Release
       working-directory: release
       env:
-        GITHUB_TOKEN: ${{ secrets.my_token }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release create ${{ env.commit_ver }} ${{ env.ZIP_NAME }}.zip --target ${{ GITHUB.SHA }} -t "${{ env.commit_ver }}" -F hash.md
+        gh release create "test-9999" libcxx-full.tar.gz --target ${{ GITHUB.SHA }} -t "test-8888"
