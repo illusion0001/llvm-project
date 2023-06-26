@@ -100,3 +100,10 @@ jobs:
     - name: Create tarball
       working-directory: release
       run: tar -czf libcxx-full.tar.gz lib/* include/*
+
+    - name: Create Release
+      working-directory: release
+      env:
+        GITHUB_TOKEN: ${{ secrets.my_token }}
+      run: |
+        gh release create ${{ env.commit_ver }} ${{ env.ZIP_NAME }}.zip --target ${{ GITHUB.SHA }} -t "${{ env.commit_ver }}" -F hash.md
