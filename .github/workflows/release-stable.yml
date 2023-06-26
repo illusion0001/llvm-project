@@ -53,8 +53,8 @@ jobs:
         mkdir libcxxabi/build && cd libcxxabi/build
         cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" \
         -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 \
-        -I../../../oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 \
-        -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" \
+        -I${{ github.workspace }}/oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 \
+        -D_LIBUNWIND_IS_BAREMETAL=1 -I${{ github.workspace }}/oops4/include" \
         -DLLVM_PATH="../../llvm" -DLIBCXXABI_ENABLE_SHARED=NO \
         -DLIBCXXABI_ENABLE_STATIC=YES -DLIBCXXABI_ENABLE_EXCEPTIONS=YES \
         -DLIBCXXABI_USE_COMPILER_RT=YES -DLIBCXXABI_USE_LLVM_UNWINDER=YES \
