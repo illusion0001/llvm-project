@@ -21,7 +21,7 @@ jobs:
         path: OpenOrbis-PS4-Toolchain
 
     - name: Fetch musl
-      run: curl -sL https://github.com/OpenOrbis/musl/releases/latest/download/musl.tar.gz | tar xz -C ./oops4
+      run: curl -sL https://github.com/OpenOrbis/musl/releases/latest/download/musl.tar.gz | tar xz -C ./OpenOrbis-PS4-Toolchain
 
     - name: Build compiler-rt
       run: |
