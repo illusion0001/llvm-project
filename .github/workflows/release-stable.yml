@@ -28,7 +28,7 @@ jobs:
       run: |
         mkdir compiler-rt/build && cd compiler-rt/build
         cmake -DCMAKE_C_COMPILER="clang" \
-        -DCMAKE_CXX_COMPILER="clang++"\
+        -DCMAKE_CXX_COMPILER="clang++" \
         -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" \
         -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" \
         -DLLVM_PATH="../../llvm" -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="x86_64-scei-ps4" \
