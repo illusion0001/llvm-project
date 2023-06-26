@@ -16,52 +16,73 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Install dependencies
       run: |
-        sudo apt-get install -y llvm
+        sudo apt install llvm
 
     - name: Fetch toolchain headers
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: OpenOrbis/OpenOrbis-PS4-Toolchain
         path: oops4
         ref: master
-    
-    - name: Fetch musl stable
-      uses: i3h/download-release-asset@v1
-      with:
-        owner: OpenOrbis
-        repo: musl
-        tag: latest
-        file: musl.tar.gz
-    
-    - name: Extract musl
-      run: |
-        mv musl.tar.gz oops4/musl.tar.gz
-        cd oops4 && tar -xvzf musl.tar.gz
+
+    - name: Fetch musl
+      run: curl -sL https://github.com/OpenOrbis/musl/releases/latest/download/musl.tar.gz | tar xz -C ./oops4
 
     - name: Build compiler-rt
       run: |
         mkdir compiler-rt/build && cd compiler-rt/build
-        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" -DLLVM_PATH="../../llvm" -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="x86_64-scei-ps4" -DCOMPILER_RT_BAREMETAL_BUILD=YES -DCOMPILER_RT_BUILD_BUILTINS=ON -DCOMPILER_RT_BUILD_CRT=OFF -DCOMPILER_RT_BUILD_SANITIZERS=OFF -DCOMPILER_RT_BUILD_XRAY=OFF -DCOMPILER_RT_BUILD_LIBFUZZER=OFF -DCOMPILER_RT_BUILD_PROFILE=OFF .. && make
+        cmake -DCMAKE_C_COMPILER="clang" \
+        -DCMAKE_CXX_COMPILER="clang++"\
+        -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" \
+        -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" \
+        -DLLVM_PATH="../../llvm" -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="x86_64-scei-ps4" \
+        -DCOMPILER_RT_BAREMETAL_BUILD=YES -DCOMPILER_RT_BUILD_BUILTINS=ON \
+        -DCOMPILER_RT_BUILD_CRT=OFF -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
+        -DCOMPILER_RT_BUILD_XRAY=OFF -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
+        -DCOMPILER_RT_BUILD_PROFILE=OFF .. 
+        make
 
     - name: Build libunwind
       run: |
         mkdir libunwind/build && cd libunwind/build
-        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" -DLLVM_PATH="../../llvm" -DLIBUNWIND_USE_COMPILER_RT=YES -DLIBUNWIND_BUILD_32_BITS=NO -DLIBUNWIND_ENABLE_STATIC=ON -DLIBUNWIND_USE_COMPILER_RT=YES -DLIBUNWIND_ENABLE_SHARED=OFF .. && make
+        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" \
+        -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" \
+        -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1" \
+        -DLLVM_PATH="../../llvm" -DLIBUNWIND_USE_COMPILER_RT=YES \
+        -DLIBUNWIND_BUILD_32_BITS=NO -DLIBUNWIND_ENABLE_STATIC=ON \
+        -DLIBUNWIND_USE_COMPILER_RT=YES -DLIBUNWIND_ENABLE_SHARED=OFF ..
+        make
 
     - name: Build libcxxabi
       run: |
         mkdir libcxxabi/build && cd libcxxabi/build
-        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" -DLLVM_PATH="../../llvm" -DLIBCXXABI_ENABLE_SHARED=NO -DLIBCXXABI_ENABLE_STATIC=YES -DLIBCXXABI_ENABLE_EXCEPTIONS=YES -DLIBCXXABI_USE_COMPILER_RT=YES -DLIBCXXABI_USE_LLVM_UNWINDER=YES -DLIBCXXABI_LIBUNWIND_PATH="../../libunwind" -DLIBCXXABI_LIBCXX_INCLUDES="../../libcxx/include" -DLIBCXXABI_ENABLE_PIC=YES .. && make
+        cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" \
+        -DCMAKE_C_FLAGS="-fPIC -DPS4 -D_LIBUNWIND_IS_BAREMETAL=1 \
+        -I../../../oops4/include" -DCMAKE_CXX_FLAGS="-fPIC -DPS4 \
+        -D_LIBUNWIND_IS_BAREMETAL=1 -I../../../oops4/include" \
+        -DLLVM_PATH="../../llvm" -DLIBCXXABI_ENABLE_SHARED=NO \
+        -DLIBCXXABI_ENABLE_STATIC=YES -DLIBCXXABI_ENABLE_EXCEPTIONS=YES \
+        -DLIBCXXABI_USE_COMPILER_RT=YES -DLIBCXXABI_USE_LLVM_UNWINDER=YES \
+        -DLIBCXXABI_LIBUNWIND_PATH="../../libunwind" -DLIBCXXABI_LIBCXX_INCLUDES="../../libcxx/include" \
+        -DLIBCXXABI_ENABLE_PIC=YES ..
+        make
 
     - name: Build libcxx
       run: |
         mkdir out
         mkdir libcxx/build && cd libcxx/build
-        cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLIBCXX_HAS_MUSL_LIBC=1 -DLIBCXX_HAS_GCC_S_LIB=0 -DLIBCXX_ENABLE_THREADS=1 -DLIBCXX_HAS_THREAD_API_PTHREAD=1 -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON -DLIBCXX_ENABLE_SHARED=OFF -DLLVM_PATH="../../llvm" -DCMAKE_C_FLAGS="-DPS4 -fPIC" -DCMAKE_CXX_FLAGS="-DPS4 -fPIC" -DCMAKE_INSTALL_PREFIX="../../out" .. && cmake -DCMAKE_SYSROOT="../../../oops4" .. && make && make install
+        cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+        -DLIBCXX_HAS_MUSL_LIBC=1 -DLIBCXX_HAS_GCC_S_LIB=0 -DLIBCXX_ENABLE_THREADS=1 \
+        -DLIBCXX_HAS_THREAD_API_PTHREAD=1 -DLIBCXX_CXX_ABI=libcxxabi -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" \
+        -DLIBCXX_CXX_ABI_LIBRARY_PATH="../../libcxxabi/build/lib" -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON -DLIBCXX_ENABLE_SHARED=OFF \
+        -DLLVM_PATH="../../llvm" -DCMAKE_C_FLAGS="-DPS4 -fPIC" -DCMAKE_CXX_FLAGS="-DPS4 -fPIC" -DCMAKE_INSTALL_PREFIX="../../out" .. 
+        cmake -DCMAKE_SYSROOT="../../../oops4" ..
+        make
+        make install
 
     - name: Copy libs and headers
       continue-on-error: true
@@ -88,9 +109,8 @@ jobs:
         llvm-ar -M < mri.txt && rm mri.txt && rm libc++.a && mv libc++M.a libc++.a
 
     - name: Create tarball
-      run: |
-        cd release
-        tar -cvzf libcxx-full.tar.gz lib/* include/*
+      working-directory: release
+      run: tar -czf libcxx-full.tar.gz lib/* include/*
 
     - name: Create Release
       id: create_release
