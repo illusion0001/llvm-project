@@ -2,25 +2,17 @@ name: Create Stable Release
 
 on:
   push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-
   workflow_dispatch:
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
     
     - name: Install dependencies
-      run: |
-        sudo apt install llvm
+      run: sudo apt install llvm
 
     - name: Fetch toolchain headers
       uses: actions/checkout@v3
