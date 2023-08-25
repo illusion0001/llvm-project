@@ -2,8 +2,6 @@ name: Create Stable Release
 
 on:
   push:
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
 
 # for release create
@@ -111,4 +109,4 @@ jobs:
       working-directory: release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release create release-${{ GITHUB.SHA }} libcxx-full.tar.gz --target ${{ GITHUB.SHA }} -t "Automated Release ${{ GITHUB.SHA }}"
+      run: echo gh release create release-${{ GITHUB.SHA }} libcxx-full.tar.gz --target ${{ GITHUB.SHA }} -t "Automated Release ${{ GITHUB.SHA }}"
