@@ -1,0 +1,43 @@
+name: Release Binaries
+
+on: push
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@main
+
+      - name: Setup environment variables
+        run: |
+          $_ver = "v17-$(git rev-parse --short=8 HEAD)"
+          echo "commit_ver=$_ver" >> "$Env:GITHUB_ENV"
+
+      - name: Install ninja
+        run: choco install ninja
+
+      - name: Build
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          mkdir build
+          cmake -GNinja -S llvm -B build -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=X86
+          cd build
+          ninja
+
+      - name: Zip
+        run: 7z a -t7z -mx=9 -m0=LZMA2 -mtm bin.7z build/bin
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: bin
+          path: bin.7z
+
+      - name: Upload release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create ${{ env.commit_ver }} bin.7z --target ${{ GITHUB.SHA }} -t "${{ env.commit_ver }}" 
