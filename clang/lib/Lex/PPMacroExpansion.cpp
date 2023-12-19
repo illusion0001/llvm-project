@@ -1561,7 +1561,24 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
       if (II == Ident__FILE_NAME__) {
         processPathToFileName(FN, PLoc, getLangOpts(), getTargetInfo());
       } else {
+#ifdef _WIN32
+        FullSourceLoc Loc;
+        const PreprocessorLexer *TheLexer = getCurrentFileLexer();
+        const FileEntry *CurFile =
+            SourceMgr.getFileEntryForID(TheLexer->getFileID());
+        const auto File =
+            SourceMgr.getFileManager().getOptionalFileRef(CurFile->getName());
+        if (TheLexer && CurFile && File) {
+          FN = File->getName();
+          llvm::sys::fs::make_absolute(FN);
+          llvm::sys::path::native(FN);
+          llvm::sys::path::remove_dots(FN, /* remove_dot_dot */ true);
+        } else {
+          FN += PLoc.getFilename();
+        }
+#else
         FN += PLoc.getFilename();
+#endif
         processPathForFileMacro(FN, getLangOpts(), getTargetInfo());
       }
       Lexer::Stringify(FN);
