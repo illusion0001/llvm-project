@@ -5,11 +5,19 @@ on: push
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout main repository
         uses: actions/checkout@main
         # with:
           # fetch-depth: 0
+
+      - name: Setup environment variables
+        run: |
+          $cmdOutput = Split-Path -Path $pwd -Leaf
+          $_ver = "17.$(git rev-list HEAD --count)-$(git rev-parse --short=8 HEAD)"
+          echo "commit_ver=$_ver" >> "$Env:GITHUB_ENV"
 
       - name: Install ninja
         run: choco install ninja
@@ -31,3 +39,6 @@ jobs:
         with:
           name: bin
           path: bin.7z
+
+      - name: Upload release
+        run: gh release create ${{ env.commit_ver }} bin.7z --target ${{ GITHUB.SHA }} -t "${{ env.commit_ver }}" 
