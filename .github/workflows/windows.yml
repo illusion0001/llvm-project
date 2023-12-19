@@ -1,0 +1,48 @@
+name: Release Binaries
+
+on: push
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@main
+
+      - name: Setup environment variables
+        run: |
+          $_ver = "$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short=8 HEAD)"
+          echo "commit_ver=$_ver" >> "$Env:GITHUB_ENV"
+
+      - name: Install ninja
+        run: choco install ninja
+
+      - name: Build
+        run: |
+          echo "Setup VS Environment Variables"
+          $installationPath = vswhere.exe -prerelease -latest -property installationPath
+          if ($installationPath -and (test-path "$installationPath\Common7\Tools\vsdevcmd.bat"))
+          {
+              & "${env:COMSPEC}" /s /c "`"$installationPath\Common7\Tools\vsdevcmd.bat`" -no_logo && set" | foreach-object {
+                  $name, $value = $_ -split '=', 2
+                  set-content env:\"$name" $value
+              }
+          }
+          cmake -G "Visual Studio 17 2022" -S llvm -B build `
+          -DLLVM_ENABLE_PROJECTS="clang" `
+          -DLLVM_ENABLE_PDB=TRUE `
+          -A x64 `
+          -Thost=x64
+          cd build
+          msbuild /m /p:Configuration=Release /p:Platform=x64 LLVM.sln
+
+      - name: Zip
+        run: 7z a -t7z -mx=9 -m0=LZMA2 bin.7z build/Release/bin
+
+      - name: Upload release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create ${{ env.commit_ver }} bin.7z build/Release/bin/clang-cl.exe --target ${{ GITHUB.SHA }} -t "${{ env.commit_ver }}" 
+
