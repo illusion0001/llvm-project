@@ -10,13 +10,10 @@ jobs:
     steps:
       - name: Checkout main repository
         uses: actions/checkout@main
-        # with:
-          # fetch-depth: 0
 
       - name: Setup environment variables
         run: |
-          $cmdOutput = Split-Path -Path $pwd -Leaf
-          $_ver = "17.$(git rev-list HEAD --count)-$(git rev-parse --short=8 HEAD)"
+          $_ver = "v17-$(git rev-parse --short=8 HEAD)"
           echo "commit_ver=$_ver" >> "$Env:GITHUB_ENV"
 
       - name: Install ninja
