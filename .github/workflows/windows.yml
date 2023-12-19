@@ -38,4 +38,6 @@ jobs:
           path: bin.7z
 
       - name: Upload release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create ${{ env.commit_ver }} bin.7z --target ${{ GITHUB.SHA }} -t "${{ env.commit_ver }}" 
