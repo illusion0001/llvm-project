@@ -17,7 +17,7 @@ jobs:
       - name: Build
         shell: cmd
         run: |
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mkdir build
           cmake -GNinja -S llvm -B build -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=X86
           cd build
